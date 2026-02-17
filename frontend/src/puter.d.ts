@@ -12,7 +12,13 @@ declare global {
           chat(
             prompt: string,
             options?: { model?: string; stream?: boolean },
-          ): Promise<{ message: { role: string; content: string } }>;
+          ): Promise<{
+            message: {
+              role: string;
+              // Claude returns an array of content blocks; other models return a plain string.
+              content: string | Array<{ type: string; text?: string }>;
+            };
+          }>;
         };
       }
     | undefined;
