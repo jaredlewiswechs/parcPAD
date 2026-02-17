@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =====================================================================
+   CSS Custom Properties — Sequoia Design System
+   ===================================================================== */
+:root {
+  /* Fonts */
+  --font-ui:      -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  --font-mono:    'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
+  --font-heading: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+
+  /* Glass (light mode) */
+  --glass-bg:     rgba(245, 240, 235, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.24);
+  --glass-glow:   rgba(107, 143, 113, 0.15);
+
+  /* Status glow */
+  --glow-fin:     rgba(107, 143, 113, 0.5);
+  --glow-finfr:   rgba(155, 45, 48, 0.5);
+  --glow-pending: rgba(201, 168, 76, 0.4);
+}
+
+.dark {
+  --glass-bg:     rgba(28, 25, 23, 0.68);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --glass-glow:   rgba(107, 143, 113, 0.12);
+}
+
+/* =====================================================================
+   Body / Page Background
+   ===================================================================== */
+html, body {
+  height: 100%;
+  font-family: var(--font-ui);
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: linear-gradient(175deg, #FAF7F2 0%, #F5F0EB 30%, #E8E0D4 70%, #DDD5C8 100%);
+  background-attachment: fixed;
+  color: #1C1917;
+  min-height: 100vh;
+}
+
+.dark body,
+body.dark {
+  background: linear-gradient(175deg, #1C1917 0%, #292524 40%, #1C1917 100%);
+  color: #F5F0EB;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =====================================================================
+   Glass Panel System — Liquid Glass
+   ===================================================================== */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 4px 24px -4px rgba(0, 0, 0, 0.12);
+}
+
+/* Concentric corner radii (Apple HIG 2026) */
+.glass-panel .glass-panel {
+  border-radius: 16px;
+}
+.glass-panel .glass-panel .glass-panel {
+  border-radius: 12px;
+}
+
+.glass-panel-elevated {
+  background: var(--glass-bg);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+    0 8px 40px -8px rgba(0, 0, 0, 0.18);
+}
+
+.glass-panel-inset {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.dark .glass-panel-inset {
+  background: rgba(0, 0, 0, 0.24);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Status border glows */
+.glass-panel-fin {
+  border-color: rgba(107, 143, 113, 0.4);
+  box-shadow:
+    inset 0 1px 0 0 rgba(107, 143, 113, 0.1),
+    0 0 0 1px rgba(107, 143, 113, 0.15),
+    0 4px 24px -4px rgba(0, 0, 0, 0.12);
+}
+
+.glass-panel-finfr {
+  border-color: rgba(155, 45, 48, 0.4);
+  box-shadow:
+    inset 0 1px 0 0 rgba(155, 45, 48, 0.1),
+    0 0 0 1px rgba(155, 45, 48, 0.15),
+    0 4px 24px -4px rgba(0, 0, 0, 0.12);
+}
+
+.glass-panel-pending {
+  border-color: rgba(201, 168, 76, 0.4);
+  box-shadow:
+    inset 0 1px 0 0 rgba(201, 168, 76, 0.1),
+    0 0 0 1px rgba(201, 168, 76, 0.15),
+    0 4px 24px -4px rgba(0, 0, 0, 0.12);
+}
+
+/* =====================================================================
+   Status Lights
+   ===================================================================== */
+.status-fin {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #6B8F71;
+  box-shadow: 0 0 6px 2px rgba(107, 143, 113, 0.5);
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+.status-finfr {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #9B2D30;
+  box-shadow: 0 0 6px 2px rgba(155, 45, 48, 0.5);
+  animation: glow-berry 2s ease-in-out infinite;
+}
+
+.status-pending {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #C9A84C;
+  box-shadow: 0 0 6px 2px rgba(201, 168, 76, 0.4);
+  animation: pulse-warm 1.5s ease-in-out infinite;
+}
+
+/* =====================================================================
+   Tab Bar (Liquid Glass — shrinks on scroll)
+   ===================================================================== */
+.tab-bar {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-bar.scrolled {
+  transform: scale(0.92);
+  padding: 4px 16px;
+}
+
+/* =====================================================================
+   Typography
+   ===================================================================== */
+.heading-xl  { font-family: var(--font-heading); font-size: 34px; font-weight: 700; line-height: 1.1; }
+.heading-lg  { font-family: var(--font-heading); font-size: 22px; font-weight: 600; line-height: 1.2; }
+.body-text   { font-family: var(--font-ui);      font-size: 17px; line-height: 1.5; }
+.caption     { font-family: var(--font-ui);      font-size: 13px; line-height: 1.4; }
+.mono-text   { font-family: var(--font-mono);    font-size: 13px; line-height: 1.4; }
+
+/* =====================================================================
+   Focus rings (sage green, accessible)
+   ===================================================================== */
+*:focus-visible {
+  outline: 2px solid #6B8F71;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* =====================================================================
+   Reduced motion
+   ===================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =====================================================================
+   Scrollbar (light, natural)
+   ===================================================================== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(107, 143, 113, 0.3);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 143, 113, 0.5);
+}
+
+/* =====================================================================
+   Utility overrides
+   ===================================================================== */
+.text-fin    { color: #6B8F71; }
+.text-finfr  { color: #9B2D30; }
+.text-pending { color: #C9A84C; }
+
+.bg-fin-subtle    { background: rgba(107, 143, 113, 0.1); }
+.bg-finfr-subtle  { background: rgba(155, 45, 48, 0.1); }
+.bg-pending-subtle { background: rgba(201, 168, 76, 0.1); }

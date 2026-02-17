@@ -11,6 +11,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from newton.ada import Ada, detect_constraints, get_laws
@@ -46,6 +47,14 @@ app = FastAPI(
         "Constraint-first verification engine. "
         "Every response includes its Newton witness."
     ),
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # Restrict in production (e.g. your Render/Vercel domain)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
