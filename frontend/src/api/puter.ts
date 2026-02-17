@@ -113,6 +113,36 @@ export function buildRepairPrompt(
 }
 
 /**
+ * Build a lesson prompt for the teach command.
+ * Uses Newton's lesson structure (title + cards) to ground the LLM's output.
+ */
+export function buildTeachPrompt(
+  topic: string,
+  lesson: {
+    title: string;
+    cards: Array<{ title: string; card_type: string; content: string }>;
+  },
+): string {
+  const sections = lesson.cards
+    .map((c) => `  • [${c.card_type}] ${c.title}`)
+    .join('\n');
+
+  return [
+    `You are an expert educator. Teach the topic: "${topic}"`,
+    '',
+    `Newton has structured this as: "${lesson.title}"`,
+    'Lesson sections to cover:',
+    sections || '  (general overview)',
+    '',
+    'Write a complete, engaging lesson. For each section use a clear ## heading.',
+    'Include concrete examples, analogies, and short paragraphs.',
+    'Finish with a brief ## Summary.',
+    '',
+    'Be accurate, educational, and engaging. Do not use placeholder text.',
+  ].join('\n');
+}
+
+/**
  * Build a cartridge-specific LLM prompt based on cartridge type and Newton spec.
  */
 export function buildCartridgePrompt(

@@ -68,10 +68,12 @@ function mergeCartridgePuterContent(
 }
 
 export const CartridgeRouter: React.FC = () => {
-  const [intent, setIntent]         = useState('');
-  const [cartType, setCartType]     = useState<CartridgeType>('auto');
-  const [result, setResult]         = useState<NewtonResponse<CartridgePayload> | null>(null);
-  const [loadingMsg, setLoadingMsg] = useState<string>('Building cartridge…');
+  const [intent, setIntent]           = useState('');
+  const [cartType, setCartType]       = useState<CartridgeType>('auto');
+  const [result, setResult]           = useState<NewtonResponse<CartridgePayload> | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [loadingMsg, setLoadingMsg]   = useState<string>('Building cartridge…');
 
   const autoMut    = useCartridgeAuto();
   const visualMut  = useCartridgeVisual();
@@ -93,11 +95,12 @@ export const CartridgeRouter: React.FC = () => {
 
   const active = mutMap[cartType];
 
-  // True while any async work is in progress (cartridge gen + puter + verify)
-  const isPending = active.isPending || verifyMut.isPending;
-
   const submit = async () => {
-    if (!intent.trim()) return;
+    if (!intent.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError(null);
+    setResult(null);
+
     try {
       // ── Step 1: Newton generates cartridge spec ────────────────────────────
       setLoadingMsg('Newton building cartridge spec…');
@@ -117,7 +120,6 @@ export const CartridgeRouter: React.FC = () => {
           const verifyRes = await verifyMut.mutateAsync({ content: puterContent });
 
           if (verifyRes.result === 'fin') {
-            // Merge verified puter content into payload and upgrade witness
             finalRes = {
               ...res,
               payload: mergeCartridgePuterContent(cartType, res.payload, puterContent),
@@ -125,14 +127,20 @@ export const CartridgeRouter: React.FC = () => {
               result:  'fin',
             };
           }
-          // If finfr: Newton gates out the unverified content — use original spec
+          // finfr: Newton gates the content — fall back to original Newton spec
         } catch {
-          // puter.js unavailable or LLM error — display Newton spec as-is
+          // puter.js unavailable — display Newton spec as-is
         }
       }
 
       setResult(finalRes);
-    } catch { /* error falls through silently; result remains null */ }
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : 'Failed to create cartridge — is Newton running?',
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const detectedType = (result?.payload?.type as string | undefined) ?? cartType;
@@ -181,8 +189,8 @@ export const CartridgeRouter: React.FC = () => {
           )}
           <Button
             onClick={submit}
-            loading={isPending}
-            disabled={!intent.trim()}
+            loading={isSubmitting}
+            disabled={!intent.trim() || isSubmitting}
             leftIcon={<Zap size={16} />}
             className="ml-auto"
           >
@@ -192,14 +200,22 @@ export const CartridgeRouter: React.FC = () => {
       </GlassPanel>
 
       {/* Loading */}
-      {isPending && (
+      {isSubmitting && (
         <div className="py-8 flex justify-center">
           <LoadingTrail message={loadingMsg} size="lg" />
         </div>
       )}
 
+      {/* Error */}
+      {submitError && !isSubmitting && (
+        <GlassPanel padding="md" status="finfr">
+          <p className="text-sm text-sequoia-finfr font-medium">Error</p>
+          <p className="text-sm text-stone-600 dark:text-stone-300 mt-1">{submitError}</p>
+        </GlassPanel>
+      )}
+
       {/* Result */}
-      {result && !isPending && (
+      {result && !isSubmitting && (
         <div className="space-y-4 animate-slide-up">
           {renderCartridgePayload(detectedType, result.payload)}
           <WitnessCard witness={result.witness} ledgerStep={result.ledger_step} />
