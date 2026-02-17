@@ -48,6 +48,16 @@ class RosettaCartridge(Cartridge):
             "verification_layer",
         ]
 
+        output_log = [
+            f"RosettaCartridge.process(intent={intent[:40]!r})",
+            f"  language   = {lang!r}",
+            f"  framework  = {framework!r}",
+            f"  pattern    = {pattern!r}",
+            f"  layers     = {len(layers)}",
+            *[f"    - {layer}" for layer in layers],
+            "✓ blueprint spec generated",
+        ]
+
         return {
             "spec_type": "blueprint",
             "language": lang,
@@ -62,6 +72,7 @@ class RosettaCartridge(Cartridge):
                 "finfr states never persisted.",
             ],
             "intent_summary": intent[:80],
+            "output_log": output_log,
         }
 
     def verify(self, spec: Dict[str, Any]) -> Witness:

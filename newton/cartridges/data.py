@@ -37,6 +37,14 @@ class DataCartridge(Cartridge):
             {"label": "D", "value": 88},
         ]
 
+        output_log = [
+            f"DataCartridge.process(intent={intent[:40]!r})",
+            f"  chart_type = {chart_type!r}",
+            f"  series     = {len(sample_series)} points",
+            *[f"    [{s['label']}] {s['value']}" for s in sample_series],
+            "✓ data spec generated",
+        ]
+
         return {
             "spec_type": "data",
             "chart_type": chart_type,
@@ -46,6 +54,7 @@ class DataCartridge(Cartridge):
             "series": sample_series,
             "color_scheme": "newton_default",
             "intent_summary": intent[:80],
+            "output_log": output_log,
         }
 
     def verify(self, spec: Dict[str, Any]) -> Witness:

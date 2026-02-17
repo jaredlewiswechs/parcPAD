@@ -41,6 +41,16 @@ class SequenceCartridge(Cartridge):
             {"t": 1.0,   "opacity": 0.0, "scale": 0.8, "label": "fade_out"},
         ]
 
+        output_log = [
+            f"SequenceCartridge.process(intent={intent[:40]!r})",
+            f"  duration_s    = {duration_s}",
+            f"  fps           = {fps}",
+            f"  total_frames  = {frames}",
+            f"  keyframes     = {len(keyframes)}",
+            *[f"    t={kf['t']:.1f}  opacity={kf['opacity']}  scale={kf['scale']}  [{kf['label']}]" for kf in keyframes],
+            "✓ sequence spec generated",
+        ]
+
         return {
             "spec_type": "sequence",
             "duration_s": duration_s,
@@ -49,6 +59,7 @@ class SequenceCartridge(Cartridge):
             "keyframes": keyframes,
             "easing": "ease-in-out",
             "intent_summary": intent[:80],
+            "output_log": output_log,
         }
 
     def verify(self, spec: Dict[str, Any]) -> Witness:
