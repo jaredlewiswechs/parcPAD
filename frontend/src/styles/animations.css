@@ -1,0 +1,113 @@
+/* =====================================================================
+   Newton / parcPAD — Animation keyframes
+   ===================================================================== */
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.95); }
+}
+
+@keyframes pulse-warm {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.9); }
+}
+
+@keyframes glow-sage {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(107,143,113,0.5); }
+  50%       { box-shadow: 0 0 12px 4px rgba(107,143,113,0.8); }
+}
+
+@keyframes glow-berry {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(155,45,48,0.5); }
+  50%       { box-shadow: 0 0 12px 4px rgba(155,45,48,0.8); }
+}
+
+/* Trail loading — dotted path drawn forward */
+@keyframes trail-draw {
+  0%   { stroke-dashoffset: 300; }
+  100% { stroke-dashoffset: -300; }
+}
+
+@keyframes trail-fade {
+  0%   { opacity: 0.3; }
+  50%  { opacity: 1;   }
+  100% { opacity: 0.3; }
+}
+
+/* Page transitions */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Bézier curve draw animation */
+@keyframes bezier-draw {
+  from { stroke-dashoffset: 1000; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* Ratio gauge fill */
+@keyframes gauge-fill {
+  from { width: 0%; }
+}
+
+/* Shimmer for skeleton loaders */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* =====================================================================
+   Animation utility classes
+   ===================================================================== */
+.animate-page-enter {
+  animation: page-enter 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease both;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(107, 143, 113, 0.08) 25%,
+    rgba(107, 143, 113, 0.16) 50%,
+    rgba(107, 143, 113, 0.08) 75%
+  );
+  background-size: 200% auto;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 8px;
+}
