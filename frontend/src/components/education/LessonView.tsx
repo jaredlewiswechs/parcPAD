@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { GlassPanel } from '@/components/shared/GlassPanel';
 import { Button } from '@/components/shared/Button';
@@ -17,8 +19,24 @@ function CardView({ card }: { card: Card }) {
         </span>
       </div>
       <h3 className="heading-lg">{card.title}</h3>
-      <div className="prose-sm text-stone-700 dark:text-stone-200 leading-relaxed whitespace-pre-wrap">
-        {card.content}
+      <div className="text-stone-700 dark:text-stone-200 leading-relaxed prose prose-stone dark:prose-invert prose-sm max-w-none">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h1: ({ children }) => <h1 className="text-lg font-bold mt-2 mb-1">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-base font-semibold mt-2 mb-1">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-sm font-semibold mt-1 mb-0.5">{children}</h3>,
+            p:  ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+            ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-0.5">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-0.5">{children}</ol>,
+            li: ({ children }) => <li>{children}</li>,
+            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+            em: ({ children }) => <em className="italic">{children}</em>,
+            code: ({ children }) => <code className="font-mono text-xs bg-black/5 dark:bg-white/10 px-1 py-0.5 rounded">{children}</code>,
+          }}
+        >
+          {card.content}
+        </ReactMarkdown>
       </div>
       {!!card.metadata?.grade && (
         <p className="text-xs text-stone-400">Grade: {String(card.metadata.grade)}</p>
