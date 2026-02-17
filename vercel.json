@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": null,
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12",
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/health",           "destination": "/api/index.py" },
+    { "source": "/ask",              "destination": "/api/index.py" },
+    { "source": "/verify",           "destination": "/api/index.py" },
+    { "source": "/calculate",        "destination": "/api/index.py" },
+    { "source": "/calculate/:path*", "destination": "/api/index.py" },
+    { "source": "/constraint",       "destination": "/api/index.py" },
+    { "source": "/ground",           "destination": "/api/index.py" },
+    { "source": "/vault/:path*",     "destination": "/api/index.py" },
+    { "source": "/statistics",       "destination": "/api/index.py" },
+    { "source": "/cartridge/:path*", "destination": "/api/index.py" },
+    { "source": "/education/:path*", "destination": "/api/index.py" },
+    { "source": "/ledger",           "destination": "/api/index.py" },
+    { "source": "/ledger/:path*",    "destination": "/api/index.py" },
+    { "source": "/:path*",           "destination": "/index.html" }
+  ]
+}

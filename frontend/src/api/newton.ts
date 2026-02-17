@@ -1,7 +1,9 @@
 /** Newton v2.0 API client — all 20 endpoints */
 
+// In local dev, set VITE_NEWTON_API_URL=http://localhost:8000 in frontend/.env.local
+// In production (Vercel), leave unset or set to '' — the API lives on the same origin.
 const API_BASE = (): string =>
-  (import.meta.env.VITE_NEWTON_API_URL as string | undefined) ?? 'http://localhost:8000';
+  (import.meta.env.VITE_NEWTON_API_URL as string | undefined) ?? '';
 
 async function post<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${API_BASE()}${path}`, {
