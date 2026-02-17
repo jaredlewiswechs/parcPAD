@@ -20,7 +20,7 @@ function CardView({ card }: { card: Card }) {
       <div className="prose-sm text-stone-700 dark:text-stone-200 leading-relaxed whitespace-pre-wrap">
         {card.content}
       </div>
-      {card.metadata?.grade && (
+      {!!card.metadata?.grade && (
         <p className="text-xs text-stone-400">Grade: {String(card.metadata.grade)}</p>
       )}
     </div>
