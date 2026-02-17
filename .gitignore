@@ -14,6 +14,9 @@ frontend/dist/
 frontend/node_modules/
 node_modules/
 
+# TypeScript build cache
+frontend/*.tsbuildinfo
+
 # Local environment overrides (never commit real secrets)
 .env
 .env.local
