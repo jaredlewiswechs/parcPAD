@@ -8,6 +8,7 @@ import {
   puterChat,
   buildConstrainedPrompt,
   buildRepairPrompt,
+  buildTeachPrompt,
   MAX_REPAIRS,
 } from '@/api/puter';
 import type { Message } from './BillMessage';
@@ -99,13 +100,32 @@ export const BillShell: React.FC = () => {
         content     = `Cartridge built — type: ${ctype}. See the Cartridges tab for the full output.`;
 
       } else if (type === 'teach') {
-        // ── Lesson generation ────────────────────────────────────────────────
-        setLoadingMsg('Building lesson…');
+        // ── Lesson generation — Newton structures, Ada writes, Newton verifies ─
+        setLoadingMsg('Newton structuring lesson…');
         const res   = await lessonMut.mutateAsync({ topic: arg });
         result      = res.result;
         witness     = res.witness;
+        ledgerStep  = res.ledger_step;
         const stack = res.payload;
-        content     = `Lesson: **${stack.title}**\n\n${stack.cards[0]?.content.slice(0, 300)}${(stack.cards[0]?.content.length ?? 0) > 300 ? '…' : ''}`;
+
+        // puter.js writes real lesson content from Newton's structure
+        setLoadingMsg('Ada writing lesson content…');
+        try {
+          const llmContent = await puterChat(buildTeachPrompt(arg, stack.cards
+            ? stack
+            : { title: stack.title, cards: [] }));
+
+          // Newton verifies the lesson content
+          setLoadingMsg('Newton verifying lesson…');
+          const verifyRes = await verifyMut.mutateAsync({ content: llmContent });
+          result     = verifyRes.result;
+          witness    = verifyRes.witness;
+          ledgerStep = verifyRes.ledger_step;
+          content    = `## ${stack.title}\n\n${llmContent}`;
+        } catch {
+          // Fallback: show Newton's own card content if puter.js unavailable
+          content = `## ${stack.title}\n\n${stack.cards.map(c => `### ${c.title}\n\n${c.content}`).join('\n\n')}`;
+        }
 
       } else {
         // ── Full Newton / Ada (puter.js) / C loop ────────────────────────────
