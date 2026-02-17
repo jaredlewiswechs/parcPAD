@@ -12,8 +12,9 @@ import { RosettaCartridge }  from './RosettaCartridge';
 import {
   useCartridgeAuto, useCartridgeVisual, useCartridgeSound,
   useCartridgeSequence, useCartridgeData, useCartridgeRosetta,
-  useCartridgeInfo,
+  useCartridgeInfo, useVerify,
 } from '@/hooks/useNewton';
+import { puterChat, buildCartridgePrompt, extractSvg } from '@/api/puter';
 import type { CartridgePayload, NewtonResponse } from '@/api/newton';
 import { clsx } from '@/lib/clsx';
 
@@ -44,17 +45,41 @@ function renderCartridgePayload(type: string, payload: CartridgePayload) {
   );
 }
 
-export const CartridgeRouter: React.FC = () => {
-  const [intent, setIntent]     = useState('');
-  const [cartType, setCartType] = useState<CartridgeType>('auto');
-  const [result, setResult]     = useState<NewtonResponse<CartridgePayload> | null>(null);
+/**
+ * Merge puter-generated content into a cartridge payload.
+ * For visual cartridges: inject SVG if extractable.
+ * For rosetta: inject as `code` field (already rendered by RosettaCartridge).
+ * Others: attach as `puter_content` for display.
+ */
+function mergeCartridgePuterContent(
+  type: CartridgeType,
+  payload: CartridgePayload,
+  puterContent: string,
+): CartridgePayload {
+  if (type === 'visual' || type === 'auto') {
+    const svg = extractSvg(puterContent);
+    if (svg) return { ...payload, svg };
+  }
+  if (type === 'rosetta') {
+    return { ...payload, code: puterContent };
+  }
+  // Sound, Sequence, Data — attach as a human-readable description
+  return { ...payload, puter_content: puterContent };
+}
 
-  const autoMut     = useCartridgeAuto();
-  const visualMut   = useCartridgeVisual();
-  const soundMut    = useCartridgeSound();
-  const seqMut      = useCartridgeSequence();
-  const dataMut     = useCartridgeData();
-  const rosettaMut  = useCartridgeRosetta();
+export const CartridgeRouter: React.FC = () => {
+  const [intent, setIntent]         = useState('');
+  const [cartType, setCartType]     = useState<CartridgeType>('auto');
+  const [result, setResult]         = useState<NewtonResponse<CartridgePayload> | null>(null);
+  const [loadingMsg, setLoadingMsg] = useState<string>('Building cartridge…');
+
+  const autoMut    = useCartridgeAuto();
+  const visualMut  = useCartridgeVisual();
+  const soundMut   = useCartridgeSound();
+  const seqMut     = useCartridgeSequence();
+  const dataMut    = useCartridgeData();
+  const rosettaMut = useCartridgeRosetta();
+  const verifyMut  = useVerify();
   const { data: infoData } = useCartridgeInfo();
 
   const mutMap: Record<CartridgeType, { mutateAsync: (s: string) => Promise<NewtonResponse<CartridgePayload>>; isPending: boolean }> = {
@@ -68,12 +93,46 @@ export const CartridgeRouter: React.FC = () => {
 
   const active = mutMap[cartType];
 
+  // True while any async work is in progress (cartridge gen + puter + verify)
+  const isPending = active.isPending || verifyMut.isPending;
+
   const submit = async () => {
     if (!intent.trim()) return;
     try {
+      // ── Step 1: Newton generates cartridge spec ────────────────────────────
+      setLoadingMsg('Newton building cartridge spec…');
       const res = await active.mutateAsync(intent.trim());
-      setResult(res);
-    } catch { /* error shown below */ }
+
+      // ── Step 2: puter.js augments with LLM content ────────────────────────
+      let finalRes = res;
+      if (typeof puter !== 'undefined') {
+        try {
+          setLoadingMsg('Ada generating content via LLM…');
+          const specPayload = res.payload as Record<string, unknown>;
+          const prompt = buildCartridgePrompt(cartType, intent.trim(), specPayload);
+          const puterContent = await puterChat(prompt);
+
+          // ── Step 3: Newton verifies the LLM content ────────────────────────
+          setLoadingMsg('Newton verifying LLM content…');
+          const verifyRes = await verifyMut.mutateAsync({ content: puterContent });
+
+          if (verifyRes.result === 'fin') {
+            // Merge verified puter content into payload and upgrade witness
+            finalRes = {
+              ...res,
+              payload: mergeCartridgePuterContent(cartType, res.payload, puterContent),
+              witness: verifyRes.witness,
+              result:  'fin',
+            };
+          }
+          // If finfr: Newton gates out the unverified content — use original spec
+        } catch {
+          // puter.js unavailable or LLM error — display Newton spec as-is
+        }
+      }
+
+      setResult(finalRes);
+    } catch { /* error falls through silently; result remains null */ }
   };
 
   const detectedType = (result?.payload?.type as string | undefined) ?? cartType;
@@ -122,7 +181,7 @@ export const CartridgeRouter: React.FC = () => {
           )}
           <Button
             onClick={submit}
-            loading={active.isPending}
+            loading={isPending}
             disabled={!intent.trim()}
             leftIcon={<Zap size={16} />}
             className="ml-auto"
@@ -133,14 +192,14 @@ export const CartridgeRouter: React.FC = () => {
       </GlassPanel>
 
       {/* Loading */}
-      {active.isPending && (
+      {isPending && (
         <div className="py-8 flex justify-center">
-          <LoadingTrail message="Building cartridge…" size="lg" />
+          <LoadingTrail message={loadingMsg} size="lg" />
         </div>
       )}
 
       {/* Result */}
-      {result && !active.isPending && (
+      {result && !isPending && (
         <div className="space-y-4 animate-slide-up">
           {renderCartridgePayload(detectedType, result.payload)}
           <WitnessCard witness={result.witness} ledgerStep={result.ledger_step} />

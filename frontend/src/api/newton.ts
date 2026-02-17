@@ -61,7 +61,7 @@ export interface HealthResponse {
 export interface AskPayload {
   prompt:        string;
   output:        string;
-  constraints:   unknown[];
+  constraints:   Record<string, unknown>;
   laws_applied:  number;
 }
 
