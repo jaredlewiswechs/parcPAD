@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Cpu, Zap } from 'lucide-react';
+import { Cpu, Zap, MessageSquare } from 'lucide-react';
 import { GlassPanel } from '@/components/shared/GlassPanel';
 import { Button } from '@/components/shared/Button';
 import { WitnessCard } from '@/components/shared/WitnessCard';
 import { LoadingTrail } from '@/components/shared/LoadingTrail';
+import { OutputConsole } from '@/components/shared/OutputConsole';
 import { VisualCartridge }   from './VisualCartridge';
 import { SoundCartridge }    from './SoundCartridge';
 import { SequenceCartridge } from './SequenceCartridge';
@@ -29,6 +30,7 @@ const TYPE_LABELS: Record<CartridgeType, string> = {
   rosetta:  'Rosetta',
 };
 
+/** Route to the right renderer based on type string in payload. */
 function renderCartridgePayload(type: string, payload: CartridgePayload) {
   const t = type.toLowerCase();
   if (t.includes('visual'))   return <VisualCartridge   payload={payload} />;
@@ -36,44 +38,50 @@ function renderCartridgePayload(type: string, payload: CartridgePayload) {
   if (t.includes('sequence')) return <SequenceCartridge payload={payload} />;
   if (t.includes('data'))     return <DataCartridge     payload={payload} />;
   if (t.includes('rosetta'))  return <RosettaCartridge  payload={payload} />;
+  // Agnostic fallback — show output_log if present, else raw JSON
+  const outputLog = payload['output_log'] as string[] | undefined;
   return (
-    <GlassPanel padding="sm" variant="inset">
-      <pre className="font-mono text-xs text-stone-600 dark:text-stone-300 overflow-auto max-h-64 whitespace-pre-wrap">
-        {JSON.stringify(payload, null, 2)}
-      </pre>
-    </GlassPanel>
+    <div className="space-y-3">
+      {outputLog && outputLog.length > 0 && (
+        <OutputConsole lines={outputLog} title="cartridge output" />
+      )}
+      <GlassPanel padding="sm" variant="inset">
+        <pre className="font-mono text-xs text-stone-600 dark:text-stone-300 overflow-auto max-h-64 whitespace-pre-wrap">
+          {JSON.stringify(payload, null, 2)}
+        </pre>
+      </GlassPanel>
+    </div>
   );
 }
 
 /**
  * Merge puter-generated content into a cartridge payload.
- * For visual cartridges: inject SVG if extractable.
- * For rosetta: inject as `code` field (already rendered by RosettaCartridge).
- * Others: attach as `puter_content` for display.
+ * Uses payload.type (set by backend) so auto-routed cartridges merge correctly.
  */
 function mergeCartridgePuterContent(
-  type: CartridgeType,
+  _cartType: CartridgeType,
   payload: CartridgePayload,
   puterContent: string,
 ): CartridgePayload {
-  if (type === 'visual' || type === 'auto') {
+  const effectiveType = (payload['type'] as string | undefined) ?? _cartType;
+  if (effectiveType === 'visual') {
     const svg = extractSvg(puterContent);
     if (svg) return { ...payload, svg };
   }
-  if (type === 'rosetta') {
+  if (effectiveType === 'rosetta') {
     return { ...payload, code: puterContent };
   }
-  // Sound, Sequence, Data — attach as a human-readable description
+  // sound, sequence, data — attach as a Newton-verified description
   return { ...payload, puter_content: puterContent };
 }
 
 export const CartridgeRouter: React.FC = () => {
-  const [intent, setIntent]           = useState('');
-  const [cartType, setCartType]       = useState<CartridgeType>('auto');
-  const [result, setResult]           = useState<NewtonResponse<CartridgePayload> | null>(null);
+  const [intent, setIntent]             = useState('');
+  const [cartType, setCartType]         = useState<CartridgeType>('auto');
+  const [result, setResult]             = useState<NewtonResponse<CartridgePayload> | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [loadingMsg, setLoadingMsg]   = useState<string>('Building cartridge…');
+  const [submitError, setSubmitError]   = useState<string | null>(null);
+  const [loadingMsg, setLoadingMsg]     = useState<string>('Building cartridge…');
 
   const autoMut    = useCartridgeAuto();
   const visualMut  = useCartridgeVisual();
@@ -102,7 +110,7 @@ export const CartridgeRouter: React.FC = () => {
     setResult(null);
 
     try {
-      // ── Step 1: Newton generates cartridge spec ────────────────────────────
+      // ── Step 1: Newton generates cartridge spec ───────────────────────────
       setLoadingMsg('Newton building cartridge spec…');
       const res = await active.mutateAsync(intent.trim());
 
@@ -112,10 +120,13 @@ export const CartridgeRouter: React.FC = () => {
         try {
           setLoadingMsg('Ada generating content via LLM…');
           const specPayload = res.payload as Record<string, unknown>;
-          const prompt = buildCartridgePrompt(cartType, intent.trim(), specPayload);
+          // Use payload.type (set by backend) so auto routes to the right prompt
+          const effectiveType =
+            (specPayload['type'] as CartridgeType | undefined) ?? cartType;
+          const prompt = buildCartridgePrompt(effectiveType, intent.trim(), specPayload);
           const puterContent = await puterChat(prompt);
 
-          // ── Step 3: Newton verifies the LLM content ────────────────────────
+          // ── Step 3: Newton gates the LLM output ────────────────────────────
           setLoadingMsg('Newton verifying LLM content…');
           const verifyRes = await verifyMut.mutateAsync({ content: puterContent });
 
@@ -127,9 +138,9 @@ export const CartridgeRouter: React.FC = () => {
               result:  'fin',
             };
           }
-          // finfr: Newton gates the content — fall back to original Newton spec
+          // finfr: Newton gates the content — fall back to Newton spec only
         } catch {
-          // puter.js unavailable — display Newton spec as-is
+          // puter.js unavailable — show Newton spec as-is
         }
       }
 
@@ -143,7 +154,12 @@ export const CartridgeRouter: React.FC = () => {
     }
   };
 
-  const detectedType = (result?.payload?.type as string | undefined) ?? cartType;
+  // payload.type is set by the backend; fall back to user-selected tab
+  const detectedType =
+    (result?.payload?.['type'] as string | undefined) ?? cartType;
+
+  // LLM description (sound / sequence / data)
+  const puterContent = result?.payload?.['puter_content'] as string | undefined;
 
   return (
     <div className="space-y-6">
@@ -214,15 +230,31 @@ export const CartridgeRouter: React.FC = () => {
         </GlassPanel>
       )}
 
-      {/* Result */}
+      {/* ── Output ──────────────────────────────────────────────────────── */}
       {result && !isSubmitting && (
         <div className="space-y-4 animate-slide-up">
+
+          {/* Main output — audio player / chart / SVG / etc. */}
           {renderCartridgePayload(detectedType, result.payload)}
+
+          {/* Ada / LLM content — only shown when Newton passes it */}
+          {puterContent && (
+            <GlassPanel padding="md">
+              <div className="flex items-center gap-2 mb-2">
+                <MessageSquare size={14} className="text-sequoia-sky" />
+                <p className="text-xs font-mono text-stone-400">ada · llm output · newton verified</p>
+              </div>
+              <p className="text-sm text-stone-700 dark:text-stone-200 leading-relaxed whitespace-pre-wrap">
+                {puterContent}
+              </p>
+            </GlassPanel>
+          )}
+
           <WitnessCard witness={result.witness} ledgerStep={result.ledger_step} />
         </div>
       )}
 
-      {/* Available cartridges info */}
+      {/* Available cartridges */}
       {infoData?.cartridges && infoData.cartridges.length > 0 && (
         <GlassPanel padding="md">
           <p className="text-sm font-medium text-stone-500 mb-3">Available Cartridges</p>

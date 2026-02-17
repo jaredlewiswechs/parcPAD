@@ -143,81 +143,128 @@ export function buildTeachPrompt(
 }
 
 /**
- * Build a cartridge-specific LLM prompt based on cartridge type and Newton spec.
+ * Build a Newton-constrained LLM prompt for a cartridge type.
+ *
+ * Every prompt:
+ *  1. Shows the Newton-verified spec as ground truth
+ *  2. States hard output format constraints Newton will gate
+ *  3. Prohibits hallucination beyond the spec
  */
 export function buildCartridgePrompt(
   cartType: string,
   intent: string,
   spec: Record<string, unknown>,
 ): string {
-  const specJson = JSON.stringify(spec, null, 2);
+  // 'auto' comes in as the user-selected tab; by the time we call this,
+  // effectiveType is already resolved from payload.type, but guard anyway.
+  const resolvedType =
+    cartType === 'auto'
+      ? ((spec['type'] as string | undefined) ?? (spec['spec_type'] as string | undefined) ?? 'rosetta')
+      : cartType;
 
-  switch (cartType) {
+  // Omit large binary fields from the spec shown to the LLM
+  const cleanSpec = { ...spec };
+  delete cleanSpec['audio_b64'];
+  delete cleanSpec['output_log'];
+  const specJson = JSON.stringify(cleanSpec, null, 2);
+
+  const NEWTON_GATE =
+    'IMPORTANT: Newton will verify your output. Do not include unverifiable claims, ' +
+    'hallucinated data, or content that contradicts the spec above. ' +
+    'Violations will cause your response to be rejected.';
+
+  switch (resolvedType) {
     case 'visual':
       return [
         `Generate inline SVG markup for: "${intent}"`,
         '',
-        'Newton-verified visual spec:',
+        'Newton-verified visual spec (ground truth):',
         specJson,
         '',
-        'Requirements:',
-        '- Output ONLY valid SVG starting with <svg and ending with </svg>',
-        '- Use the viewBox and dimensions from the spec',
-        '- Create a clear, aesthetic visual representation',
-        '- Use clean SVG elements (no scripts, no external resources)',
+        'HARD CONSTRAINTS (Newton-gated):',
+        '• Output ONLY valid SVG — start with <svg, end with </svg>, nothing else',
+        '• Match the viewBox and dimensions from the spec exactly',
+        '• No <script> tags, no external href/src, no event handlers',
+        '• Use only the shape types listed in spec.elements',
+        '',
+        NEWTON_GATE,
       ].join('\n');
 
     case 'rosetta':
       return [
-        `Generate a working code blueprint for: "${intent}"`,
+        `Generate a working code skeleton for: "${intent}"`,
         '',
-        'Newton-verified rosetta spec:',
+        'Newton-verified rosetta spec (ground truth):',
         specJson,
         '',
-        'Provide a concise, practical code skeleton.',
-        'Include comments explaining each section.',
-        'Make it immediately usable by a developer.',
+        'HARD CONSTRAINTS (Newton-gated):',
+        `• Language: ${spec['language'] ?? 'python'} — do not switch languages`,
+        `• Framework: ${spec['framework'] ?? 'fastapi'}`,
+        `• Pattern: ${spec['pattern'] ?? 'rest_api'}`,
+        '• Include all layers listed in spec.layers as clearly labelled sections',
+        '• Add a Newton verification hook in the verification_layer section',
+        '• No placeholder comments like "// TODO implement" — write real stubs',
+        '',
+        NEWTON_GATE,
       ].join('\n');
 
     case 'data':
       return [
-        `Provide structured data analysis for: "${intent}"`,
+        `Write a data analysis brief for: "${intent}"`,
         '',
-        'Newton-verified data spec:',
+        'Newton-verified data spec (ground truth):',
         specJson,
         '',
-        'Describe: data structure, key fields, relationships, and analysis approach.',
-        'Be specific and actionable.',
+        'HARD CONSTRAINTS (Newton-gated):',
+        `• Chart type is ${spec['chart_type'] ?? 'bar'} — describe accordingly`,
+        '• Reference the exact series labels and values from the spec',
+        '• Format: 3–5 bullet observations, then one sentence conclusion',
+        '• No invented data points beyond what the spec provides',
+        '',
+        NEWTON_GATE,
       ].join('\n');
 
     case 'sound':
       return [
-        `Compose audio parameters for: "${intent}"`,
+        `Write a musical brief for: "${intent}"`,
         '',
-        'Newton-verified sound spec:',
+        'Newton-verified sound spec (ground truth):',
         specJson,
         '',
-        'Provide: tempo (BPM), key/scale, instruments, mood, structure, and any notable techniques.',
-        'Format as a clear musical brief.',
+        'HARD CONSTRAINTS (Newton-gated):',
+        `• Waveform is ${spec['waveform'] ?? 'sine'} — describe its sonic character accurately`,
+        `• Tempo is ${spec['tempo_bpm'] ?? 120} BPM — describe the rhythmic feel this creates`,
+        '• Reference the note frequencies from spec.notes in musical terms (e.g. C4, A4)',
+        '• Format: mood line, then instruments/timbre, then structure, then one-line summary',
+        '• Do not suggest changing the tempo or waveform — work with the spec',
+        '',
+        NEWTON_GATE,
       ].join('\n');
 
     case 'sequence':
       return [
-        `Elaborate this sequence for: "${intent}"`,
+        `Write step descriptions for this sequence: "${intent}"`,
         '',
-        'Newton-verified sequence spec:',
+        'Newton-verified sequence spec (ground truth):',
         specJson,
         '',
-        'Provide clear, step-by-step descriptions for each element.',
-        'Explain the purpose and outcome of each step.',
+        'HARD CONSTRAINTS (Newton-gated):',
+        `• Duration is ${spec['duration_s'] ?? 5}s at ${spec['fps'] ?? 30} fps`,
+        '• Describe each keyframe in spec.keyframes in order, referencing its t, opacity, and scale values',
+        '• Format each step as: [t=X] <description of what is visible at this moment>',
+        '• Keep descriptions concrete and visual — no abstract metaphors',
+        '',
+        NEWTON_GATE,
       ].join('\n');
 
     default:
       return [
-        `Generate enhanced content for: "${intent}"`,
+        `Generate content for: "${intent}"`,
         '',
-        'Newton-verified spec:',
+        'Newton-verified spec (ground truth):',
         specJson,
+        '',
+        NEWTON_GATE,
       ].join('\n');
   }
 }

@@ -29,7 +29,9 @@ class Cartridge(ABC):
     def run(self, intent: str) -> Dict[str, Any]:
         """
         Generate spec from intent, verify it, log to ledger.
-        Returns a dict with keys: operation, spec, witness, ledger_step.
+        Returns a NewtonResponse-shaped dict:
+          {result, operation, payload, witness, ledger_step}
+        'payload' is the spec + 'type' field for frontend routing.
         """
         t0 = time.monotonic()
         spec = self.process(intent)
@@ -50,9 +52,13 @@ class Cartridge(ABC):
                 payload=log_payload,
             )
 
+        # 'type' lets the frontend route without parsing 'operation'
+        payload = {**spec, "type": self.name}
+
         return {
+            "result": witness.result.value,
             "operation": f"cartridge_{self.name}",
-            "spec": spec,
+            "payload": payload,
             "witness": witness.to_dict(),
             "ledger_step": entry.step if entry else None,
         }
