@@ -21,20 +21,32 @@ export const PUTER_MODEL = 'claude-sonnet-4-5-20250929';
 export const MAX_REPAIRS = 2;
 
 /**
- * Send a prompt to the puter.js LLM and return the text response.
- * Throws if puter.js is not loaded or the call fails.
+ * Send a prompt to the puter.js LLM and return the text response as a plain string.
+ *
+ * Claude's API returns message.content as either a plain string OR an array of
+ * content blocks: [{"type":"text","text":"..."}]. Both forms are normalised here
+ * so callers always receive a string, which Newton /verify expects.
  */
 export async function puterChat(
   prompt: string,
   model: string = PUTER_MODEL,
 ): Promise<string> {
-  if (typeof puter === 'undefined' || !puter?.ai?.chat) {
+  if (typeof puter === 'undefined') {
     throw new Error(
       'Puter.js is not available. Check your network connection or try again.',
     );
   }
   const response = await puter.ai.chat(prompt, { model });
-  return response.message.content;
+  const raw = response.message.content;
+
+  // Normalise: Claude returns content blocks as an array; other models return a string.
+  if (Array.isArray(raw)) {
+    return (raw as Array<{ type?: string; text?: string }>)
+      .filter((block) => block.type === 'text' && typeof block.text === 'string')
+      .map((block) => block.text as string)
+      .join('');
+  }
+  return raw;
 }
 
 /**
