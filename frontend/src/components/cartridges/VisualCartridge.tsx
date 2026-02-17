@@ -1,5 +1,6 @@
 import React from 'react';
 import { GlassPanel } from '@/components/shared/GlassPanel';
+import { OutputConsole } from '@/components/shared/OutputConsole';
 import type { CartridgePayload } from '@/api/newton';
 
 interface VisualCartridgeProps {
@@ -42,6 +43,10 @@ export const VisualCartridge: React.FC<VisualCartridgeProps> = ({ payload }) => 
             {JSON.stringify(payload, null, 2)}
           </pre>
         </GlassPanel>
+      )}
+
+      {Array.isArray(payload['output_log']) && (payload['output_log'] as string[]).length > 0 && (
+        <OutputConsole lines={payload['output_log'] as string[]} title="cartridge output" />
       )}
     </div>
   );

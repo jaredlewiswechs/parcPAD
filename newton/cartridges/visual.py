@@ -52,6 +52,15 @@ class VisualCartridge(Cartridge):
                 "stroke": colour, "stroke-width": 4,
             })
 
+        output_log = [
+            f"VisualCartridge.process(intent={intent[:40]!r})",
+            f"  shape   = {shape!r}",
+            f"  colour  = {colour!r}",
+            f"  elements = {len(elements)}",
+            f"  viewBox  = '0 0 200 200'",
+            "✓ SVG spec generated",
+        ]
+
         return {
             "spec_type": "svg",
             "width": 200,
@@ -59,6 +68,7 @@ class VisualCartridge(Cartridge):
             "viewBox": "0 0 200 200",
             "elements": elements,
             "intent_summary": intent[:80],
+            "output_log": output_log,
         }
 
     def verify(self, spec: Dict[str, Any]) -> Witness:
