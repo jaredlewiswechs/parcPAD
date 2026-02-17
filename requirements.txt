@@ -1,0 +1,8 @@
+# Python dependencies for Vercel serverless runtime.
+# The newton package itself is local (in newton/) and importable from the
+# project root; only its external dependencies are listed here.
+fastapi>=0.100.0
+pydantic>=2.0
+# uvicorn is not needed at runtime on Vercel (Vercel handles the ASGI server),
+# but is included for local `python -m uvicorn` use.
+uvicorn>=0.23.0

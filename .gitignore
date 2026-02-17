@@ -5,3 +5,16 @@ dist/
 build/
 .pytest_cache/
 .venv/
+
+# Vercel
+.vercel/
+
+# Frontend build output and local deps
+frontend/dist/
+frontend/node_modules/
+node_modules/
+
+# Local environment overrides (never commit real secrets)
+.env
+.env.local
+.env.production.local
